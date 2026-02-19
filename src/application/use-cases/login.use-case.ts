@@ -8,6 +8,7 @@ import {
   waitForURL,
   navigate,
   waitForSelector,
+  dismissBlockingModals,
 } from "../../infrastructure/browser/playwright-browser.service";
 import { N8nSelectors, N8nUrls } from "../../infrastructure/n8n/n8n-selectors";
 
@@ -98,6 +99,9 @@ export const executeLogin = async (
     await fillPassword(page, password, timeout);
 
     await Promise.all([waitForRedirect(page, timeout), clickLoginButton(page)]);
+    await dismissBlockingModals(page);
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    await dismissBlockingModals(page);
   } catch (error) {
     if (error instanceof AuthenticationError) {
       throw error;
