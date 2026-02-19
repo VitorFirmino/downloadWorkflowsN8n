@@ -31,6 +31,9 @@ export interface AppConfig {
   readonly headless: boolean;
   readonly exportDir: string;
   readonly scrollTimeout: number;
+  readonly scrollDelay: number;
+  readonly scrollAmount: number;
+  readonly scrollMaxRounds: number;
   readonly pageTimeout: number;
   readonly sessionDir: string;
   readonly targetSessionDir?: string;
