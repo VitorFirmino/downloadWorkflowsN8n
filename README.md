@@ -125,6 +125,9 @@ $ npm run build
 | `PLAYWRIGHT_SESSION_DIR`        | Sessão da origem                        | `.playwright-session`     |
 | `PLAYWRIGHT_SESSION_DIR_TARGET` | Sessão do destino                       | `.playwright-session-new` |
 | `SCROLL_TIMEOUT`                | Timeout de coleta (ms)                  | `60000`                   |
+| `SCROLL_DELAY`                  | Pausa entre rolagens (ms)               | `1200`                    |
+| `SCROLL_AMOUNT`                 | Distância de rolagem por passo (px)     | `180`                     |
+| `SCROLL_MAX_ROUNDS`             | Máximo de rodadas de rolagem            | `220`                     |
 | `PAGE_TIMEOUT`                  | Timeout de navegação/interação (ms)     | `60000`                   |
 | `HEADLESS`                      | Executar sem janela (`true`/`false`)    | `false`                   |
 
@@ -219,6 +222,7 @@ src/
 ## 🐛 Troubleshooting
 
 - **Falha de login:** valide credenciais e URL no `.env`.
+- **Coleta incompleta na lista:** aumente `SCROLL_DELAY`, reduza `SCROLL_AMOUNT` e aumente `SCROLL_MAX_ROUNDS`.
 - **Timeout de interação:** aumente `PAGE_TIMEOUT` e `SCROLL_TIMEOUT`.
 - **Download não inicia:** reinstale browser com `npm run install:browsers`.
 - **Import em pasta errada:** revise regex no `N8N_RULES_PATH`.
