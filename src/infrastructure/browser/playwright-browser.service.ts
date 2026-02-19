@@ -13,6 +13,91 @@ interface ScrollOptions {
   readonly y?: number;
 }
 
+const BLOCKER_HEADLINES = [
+  /restore pages?/i,
+  /change (your )?password/i,
+  /change password/i,
+  /password checkup/i,
+  /your password/i,
+  /password (?:is )?(?:in danger|compromised|exposed|leaked)/i,
+];
+
+const BLOCKER_ACTIONS = [
+  /close/i,
+  /dismiss/i,
+  /not now/i,
+  /cancel/i,
+  /ignore/i,
+  /skip/i,
+  /later/i,
+  /ok/i,
+  /entendi/i,
+  /fechar/i,
+];
+
+const hasBlockingModal = async (page: Page): Promise<boolean> => {
+  for (const pattern of BLOCKER_HEADLINES) {
+    const visible = await page
+      .getByText(pattern)
+      .first()
+      .isVisible()
+      .catch(() => false);
+    if (visible) return true;
+  }
+  return false;
+};
+
+const clickBlockingAction = async (page: Page): Promise<boolean> => {
+  const dialogScopedButtons = [
+    '[role="dialog"] button:has-text("OK")',
+    '[role="dialog"] button:has-text("Ok")',
+    '[role="dialog"] button:has-text("Not now")',
+    '[role="dialog"] button:has-text("Close")',
+    '[role="dialog"] button:has-text("Dismiss")',
+    '[role="dialog"] button:has-text("Fechar")',
+  ];
+  for (const selector of dialogScopedButtons) {
+    const button = page.locator(selector).first();
+    const visible = await button.isVisible().catch(() => false);
+    if (!visible) continue;
+    await button.click({ timeout: 1_500 }).catch(() => {});
+    return true;
+  }
+
+  for (const name of BLOCKER_ACTIONS) {
+    const button = page.getByRole("button", { name }).first();
+    const visible = await button.isVisible().catch(() => false);
+    if (!visible) continue;
+    await button.click({ timeout: 1_500 }).catch(() => {});
+    return true;
+  }
+  return false;
+};
+
+export const dismissBlockingModals = async (page: Page): Promise<void> => {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const blocked = await hasBlockingModal(page);
+    if (!blocked) return;
+
+    await page.keyboard.press("Escape").catch(() => {});
+    const clicked = await clickBlockingAction(page);
+    if (!clicked) {
+      await page
+        .evaluate(() => {
+          const candidates = Array.from(
+            document.querySelectorAll("button, [role='button']"),
+          ) as HTMLElement[];
+          const target = candidates.find((el) =>
+            /ok|not now|close|dismiss|fechar/i.test(el.textContent ?? ""),
+          );
+          target?.click();
+        })
+        .catch(() => {});
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+};
+
 
 export const navigate = async (
   page: Page,
@@ -24,10 +109,12 @@ export const navigate = async (
 
   for (let attempt = 1; attempt <= maxRetries; attempt += 1) {
     try {
+      await dismissBlockingModals(page);
       await page.goto(url, {
         waitUntil: options?.waitUntil ?? "networkidle",
         timeout: 60_000,
       });
+      await dismissBlockingModals(page);
       return;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
