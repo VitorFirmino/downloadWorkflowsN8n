@@ -48,7 +48,9 @@ const performLogin = async (
 
 
 const collectWorkflows = async (page: Page, baseUrl: string): Promise<WorkflowRefArray> => {
-  const { pageTimeout } = config;
+  const { pageTimeout, scrollMaxRounds, scrollDelay, scrollAmount } = config;
+  const safeScrollDelay = Math.max(scrollDelay, 1000);
+  const safeScrollAmount = Math.max(80, Math.min(scrollAmount, 260));
 
   logSection("Coleta de Workflows");
   debugLog(); 
@@ -57,9 +59,9 @@ const collectWorkflows = async (page: Page, baseUrl: string): Promise<WorkflowRe
     baseUrl,
     timeout: pageTimeout,
     collection: {
-      maxScrollRounds: 80,
-      scrollDelay: 250,
-      scrollAmount: 1200,
+      maxScrollRounds: scrollMaxRounds,
+      scrollDelay: safeScrollDelay,
+      scrollAmount: safeScrollAmount,
     },
     onProgress: renderCollectionProgress,
   });
