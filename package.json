@@ -1,0 +1,30 @@
+{
+  "name": "download-workflows-n8n",
+  "version": "1.0.0",
+  "description": "Backup automático de workflows do n8n via UI usando Playwright",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "npm run build && node dist/index.js",
+    "build": "tsc",
+    "install:browsers": "playwright install chromium"
+  },
+  "keywords": [
+    "n8n",
+    "playwright",
+    "backup",
+    "workflows"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.1",
+    "playwright": "^1.41.0"
+  }
+}

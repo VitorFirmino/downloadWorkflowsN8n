@@ -1,0 +1,38 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="N8N migration preview">
+  <rect width="1600" height="900" fill="#0F172A"/>
+  <rect x="60" y="60" width="1480" height="780" rx="18" fill="#111827" stroke="#334155"/>
+  <rect x="60" y="60" width="1480" height="52" rx="18" fill="#1F2937"/>
+  <circle cx="92" cy="86" r="7" fill="#EF4444"/>
+  <circle cx="116" cy="86" r="7" fill="#F59E0B"/>
+  <circle cx="140" cy="86" r="7" fill="#22C55E"/>
+
+  <rect x="96" y="150" width="480" height="42" rx="8" fill="#0B1220" stroke="#374151"/>
+  <text x="118" y="177" fill="#93C5FD" font-family="monospace" font-size="20">n8n migration dashboard (preview safe)</text>
+
+  <rect x="96" y="226" width="440" height="168" rx="12" fill="#0B1220" stroke="#334155"/>
+  <text x="120" y="262" fill="#E5E7EB" font-family="monospace" font-size="22">Source</text>
+  <text x="120" y="300" fill="#60A5FA" font-family="monospace" font-size="20">Version 1.73.1</text>
+  <text x="120" y="336" fill="#9CA3AF" font-family="monospace" font-size="18">workflows: 248</text>
+  <text x="120" y="366" fill="#9CA3AF" font-family="monospace" font-size="18">status: exported</text>
+
+  <rect x="584" y="226" width="440" height="168" rx="12" fill="#0B1220" stroke="#334155"/>
+  <text x="608" y="262" fill="#E5E7EB" font-family="monospace" font-size="22">Target</text>
+  <text x="608" y="300" fill="#34D399" font-family="monospace" font-size="20">Version 2.7.4</text>
+  <text x="608" y="336" fill="#9CA3AF" font-family="monospace" font-size="18">imported: 248</text>
+  <text x="608" y="366" fill="#9CA3AF" font-family="monospace" font-size="18">manual adjust: required</text>
+
+  <rect x="1072" y="226" width="432" height="168" rx="12" fill="#0B1220" stroke="#334155"/>
+  <text x="1096" y="262" fill="#E5E7EB" font-family="monospace" font-size="22">Warnings</text>
+  <text x="1096" y="300" fill="#FCA5A5" font-family="monospace" font-size="18">- not a full converter</text>
+  <text x="1096" y="332" fill="#FCA5A5" font-family="monospace" font-size="18">- nodes may need refactor</text>
+  <text x="1096" y="364" fill="#FCA5A5" font-family="monospace" font-size="18">- validate each workflow</text>
+
+  <rect x="96" y="430" width="1408" height="344" rx="12" fill="#0B1220" stroke="#334155"/>
+  <text x="120" y="468" fill="#E5E7EB" font-family="monospace" font-size="22">Execution Log</text>
+  <text x="120" y="512" fill="#22C55E" font-family="monospace" font-size="18">[1/5] Login source... ok</text>
+  <text x="120" y="546" fill="#22C55E" font-family="monospace" font-size="18">[2/5] Collect workflows... ok (248)</text>
+  <text x="120" y="580" fill="#22C55E" font-family="monospace" font-size="18">[3/5] Download json... ok</text>
+  <text x="120" y="614" fill="#22C55E" font-family="monospace" font-size="18">[4/5] Login target... ok</text>
+  <text x="120" y="648" fill="#F59E0B" font-family="monospace" font-size="18">[5/5] Import... ok (manual review pending)</text>
+  <text x="120" y="704" fill="#9CA3AF" font-family="monospace" font-size="16">This image is illustrative and contains no real credentials or customer data.</text>
+</svg>

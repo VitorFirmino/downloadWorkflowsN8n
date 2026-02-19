@@ -1,0 +1,18 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="N8N Migrator">
+  <defs>
+    <linearGradient id="bg" x1="16" y1="16" x2="112" y2="112" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF6D5A"/>
+      <stop offset="1" stop-color="#EA4B71"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="url(#bg)"/>
+  <circle cx="40" cy="40" r="10" fill="white" fill-opacity="0.95"/>
+  <circle cx="88" cy="40" r="10" fill="white" fill-opacity="0.95"/>
+  <circle cx="64" cy="88" r="10" fill="white" fill-opacity="0.95"/>
+  <path d="M49 40H79" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  <path d="M45 47L59 78" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  <path d="M83 47L69 78" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  <path d="M54 66H74" stroke="#2D1F24" stroke-width="6" stroke-linecap="round"/>
+  <path d="M74 66L67 59" stroke="#2D1F24" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M74 66L67 73" stroke="#2D1F24" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
