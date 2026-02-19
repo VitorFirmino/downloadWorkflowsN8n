@@ -53,6 +53,9 @@ export const config: AppConfig = Object.freeze({
   headless: toBool(process.env.HEADLESS),
   exportDir: process.env.EXPORT_DIR?.trim() ?? "exports",
   scrollTimeout: toNumber(process.env.SCROLL_TIMEOUT, 60_000),
+  scrollDelay: toNumber(process.env.SCROLL_DELAY, 1_200),
+  scrollAmount: toNumber(process.env.SCROLL_AMOUNT, 180),
+  scrollMaxRounds: toNumber(process.env.SCROLL_MAX_ROUNDS, 220),
   pageTimeout: toNumber(process.env.PAGE_TIMEOUT, 60_000),
   sessionDir:
     process.env.PLAYWRIGHT_SESSION_DIR?.trim() ?? ".playwright-session",
