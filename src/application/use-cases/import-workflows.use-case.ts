@@ -3,6 +3,8 @@ import path from "node:path";
 import type { Locator, Page } from "playwright";
 import { navigate, waitForSelector, waitForURL } from "../../infrastructure/browser/playwright-browser.service";
 import { N8nSelectors } from "../../infrastructure/n8n/n8n-selectors";
+import { logError, logProgress, logSuccess } from "../../logger";
+import type { ImportStats } from "../../domain/types";
 
 const debugLog = (..._args: unknown[]): void => {};
 
@@ -286,6 +288,23 @@ const getFolderWorkflowsUrl = ({
   folderId: string;
 }) => `${baseUrl}/projects/${projectId}/folders/${folderId}/workflows`;
 
+const getNewWorkflowUrl = ({
+  baseUrl,
+  projectId,
+  folderId,
+}: {
+  baseUrl: string;
+  projectId: string;
+  folderId?: string;
+}) => {
+  const url = new URL(`${baseUrl}/workflow/new`);
+  url.searchParams.set("projectId", projectId);
+  if (folderId) {
+    url.searchParams.set("parentFolderId", folderId);
+  }
+  return url.toString();
+};
+
 const extractProjectIdFromUrl = (url: string) => {
   const match = url.match(/\/projects\/([^/]+)\/workflows/);
   return match?.[1] ?? "";
@@ -326,11 +345,11 @@ const resolveProjectId = async ({
   const currentFromUrl = extractProjectIdFromUrl(page.url());
   if (currentFromUrl) return currentFromUrl;
 
-  await navigate(page, `${baseUrl}/projects`);
+  await navigate(page, `${baseUrl}/projects`, { waitUntil: "domcontentloaded" });
   const fromProjects = await findProjectIdFromLinks({ page, timeout });
   if (fromProjects) return fromProjects;
 
-  await navigate(page, `${baseUrl}/home/workflows`);
+  await navigate(page, `${baseUrl}/home/workflows`, { waitUntil: "domcontentloaded" });
   const fromHome = await findProjectIdFromLinks({ page, timeout });
   if (fromHome) return fromHome;
 
@@ -369,6 +388,7 @@ const waitForProjectList = async ({
     page,
     timeout,
     selectors: [
+      N8nSelectors.addFolderButton,
       N8nSelectors.resourcesList,
       N8nSelectors.resourcesListItem,
       N8nSelectors.folderLink,
@@ -517,6 +537,14 @@ const folderExistsByText = async ({
 };
 
 const clickCreateFolder = async ({ page, timeout }: { page: Page; timeout: number }) => {
+  const addFolderButton = page.locator(N8nSelectors.addFolderButton).first();
+  const addFolderCount = await addFolderButton.count().catch(() => 0);
+  if (addFolderCount > 0) {
+    await addFolderButton.waitFor({ state: "visible", timeout });
+    await addFolderButton.click();
+    return;
+  }
+
   const directButton = page
     .getByRole("button", { name: /create folder|new folder|add folder|folder/i })
     .first();
@@ -775,7 +803,7 @@ const ensureFolderPath = async ({
     const targetUrl = parentId
       ? getFolderWorkflowsUrl({ baseUrl, projectId, folderId: parentId })
       : getProjectWorkflowsUrl({ baseUrl, projectId });
-    await navigate(page, targetUrl);
+    await navigate(page, targetUrl, { waitUntil: "domcontentloaded" });
     await waitForSelector(page, N8nSelectors.resourcesList, timeout).catch(() => {});
     await syncFolderMap({ page, parentPath, folderMap });
 
@@ -809,7 +837,6 @@ const ensureFolderPath = async ({
 
     await clickCreateFolder({ page, timeout });
     await submitFolderName({ page, name: segment, timeout });
-    await page.waitForLoadState("networkidle").catch(() => {});
     await waitForSelector(page, N8nSelectors.resourcesList, timeout).catch(() => {});
     await syncFolderMap({ page, parentPath, folderMap });
 
@@ -964,14 +991,16 @@ const importFromWorkflowMenu = async ({
     })
     .catch(() => ({ hasMenu: false, hasImportInput: false, fileInputs: 0 }));
   debugLog(`[DEBUG] Editor import DOM: ${JSON.stringify(debugPresence)}`);
+  const importFeedbackTimeout = Math.min(timeout, 8_000);
 
   const directInput = page.locator('[data-test-id="workflow-import-input"]').first();
   const directInputCount = await directInput.count().catch(() => 0);
   if (directInputCount > 0) {
     await directInput.setInputFiles(filePath);
-    await page.waitForLoadState("networkidle", { timeout }).catch(() => {});
     const toast = page.locator('text=/Workflow successfully created/i').first();
-    await toast.waitFor({ state: "visible", timeout }).catch(() => {});
+    await toast
+      .waitFor({ state: "visible", timeout: importFeedbackTimeout })
+      .catch(() => {});
     return true;
   }
 
@@ -1012,9 +1041,10 @@ const importFromWorkflowMenu = async ({
   }).catch(() => null);
   if (!inputSelector) return false;
   await page.locator(inputSelector).setInputFiles(filePath);
-  await page.waitForLoadState("networkidle", { timeout }).catch(() => {});
   const toast = page.locator('text=/Workflow successfully created/i').first();
-  await toast.waitFor({ state: "visible", timeout }).catch(() => {});
+  await toast
+    .waitFor({ state: "visible", timeout: importFeedbackTimeout })
+    .catch(() => {});
   return true;
 };
 
@@ -1035,28 +1065,35 @@ const importWorkflow = async ({
   name: string;
   timeout: number;
 }) => {
-  if (folderId) {
-    const folderUrl = getFolderWorkflowsUrl({ baseUrl, projectId, folderId });
-    await navigate(page, folderUrl);
-  } else {
-    await navigate(page, getProjectWorkflowsUrl({ baseUrl, projectId }));
-  }
-  await waitForSelector(page, N8nSelectors.resourcesList, timeout).catch(() => {});
-
-  
-
   debugLog(`[DEBUG] Importando workflow: ${name}`);
-  await openCreateWorkflow({ page, timeout });
-  await waitForURL(
-    page,
-    (url) =>
-      url.pathname.startsWith("/workflow/") &&
-      url.searchParams.get("projectId") === projectId &&
-      (folderId
-        ? url.searchParams.get("parentFolderId") === folderId
-        : !url.searchParams.get("parentFolderId")),
-    timeout,
-  );
+  const expectedEditorUrl = (url: URL) =>
+    url.pathname.startsWith("/workflow/") &&
+    url.searchParams.get("projectId") === projectId &&
+    (folderId
+      ? url.searchParams.get("parentFolderId") === folderId
+      : !url.searchParams.get("parentFolderId"));
+
+  let editorOpened = false;
+  const directNewWorkflowUrl = getNewWorkflowUrl({ baseUrl, projectId, folderId });
+  await navigate(page, directNewWorkflowUrl, { waitUntil: "domcontentloaded" });
+  editorOpened = await waitForURL(page, expectedEditorUrl, Math.min(timeout, 8_000))
+    .then(() => true)
+    .catch(() => false);
+
+  if (!editorOpened) {
+    if (folderId) {
+      const folderUrl = getFolderWorkflowsUrl({ baseUrl, projectId, folderId });
+      await navigate(page, folderUrl, { waitUntil: "domcontentloaded" });
+    } else {
+      await navigate(page, getProjectWorkflowsUrl({ baseUrl, projectId }), {
+        waitUntil: "domcontentloaded",
+      });
+    }
+    await waitForSelector(page, N8nSelectors.resourcesList, timeout).catch(() => {});
+    await openCreateWorkflow({ page, timeout });
+    await waitForURL(page, expectedEditorUrl, timeout);
+  }
+
   const editorReady = await waitForAnySelector({
     page,
     selectors: [
@@ -1105,7 +1142,7 @@ const importWorkflow = async ({
 export const executeImportWorkflows = async (
   page: Page,
   options: ImportOptions,
-): Promise<void> => {
+): Promise<ImportStats> => {
   const { baseUrl, exportDir, projectId, rulesPath, fallbackFolder, timeout } = options;
   const rules = await loadRules({ rulesPath });
   const files = await getWorkflowFiles({ exportDir });
@@ -1123,7 +1160,9 @@ export const executeImportWorkflows = async (
   debugLog(`[DEBUG] Usando projectId: ${resolvedProjectId}`);
   const folderMap = new Map<string, FolderRef>();
   debugLog("[DEBUG] Navegando para lista de workflows do projeto");
-  await navigate(page, getProjectWorkflowsUrl({ baseUrl, projectId: resolvedProjectId }));
+  await navigate(page, getProjectWorkflowsUrl({ baseUrl, projectId: resolvedProjectId }), {
+    waitUntil: "domcontentloaded",
+  });
   debugLog("[DEBUG] Aguardando lista de workflows do projeto carregar");
   const listReady = await waitForProjectList({ page, timeout })
     .then(() => true)
@@ -1135,8 +1174,11 @@ export const executeImportWorkflows = async (
   debugLog("[DEBUG] Coletando pastas existentes");
   await syncFolderMap({ page, parentPath: "", folderMap });
   const existingMatchers = buildExistingFolderMatchers(folderMap);
+  let imported = 0;
+  const failures: Array<ImportStats["failures"][number]> = [];
 
-  for (const file of files) {
+  for (const [index, file] of files.entries()) {
+    const current = index + 1;
     const folderPath = classifyFolder({
       name: file.name,
       rules,
@@ -1150,24 +1192,47 @@ export const executeImportWorkflows = async (
         `[DEBUG] Sem pasta mapeada para "${file.name}", importando na raiz do projeto`,
       );
     }
-    const folderId = folderPath
-      ? await ensureFolderPath({
-          page,
-          baseUrl,
-          projectId: resolvedProjectId,
-          folderPath,
-          folderMap,
-          timeout,
-        })
-      : undefined;
-    await importWorkflow({
-      page,
-      baseUrl,
-      projectId: resolvedProjectId,
-      folderId,
-      filePath: file.filePath,
-      name: file.name,
-      timeout,
-    });
+    const destination = folderPath ?? "raiz do projeto";
+    logProgress(current, files.length, `Importando "${file.name}" -> ${destination}`);
+
+    try {
+      const folderId = folderPath
+        ? await ensureFolderPath({
+            page,
+            baseUrl,
+            projectId: resolvedProjectId,
+            folderPath,
+            folderMap,
+            timeout,
+          })
+        : undefined;
+      await importWorkflow({
+        page,
+        baseUrl,
+        projectId: resolvedProjectId,
+        folderId,
+        filePath: file.filePath,
+        name: file.name,
+        timeout,
+      });
+      imported += 1;
+      logSuccess(`[${current}/${files.length}] Importado: ${file.name}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logError(`[${current}/${files.length}] Falha em "${file.name}": ${message}`);
+      failures.push({
+        name: file.name,
+        filePath: file.filePath,
+        folderPath: folderPath ?? undefined,
+        error: message,
+      });
+    }
   }
+
+  return {
+    total: files.length,
+    imported,
+    failed: failures.length,
+    failures,
+  };
 };
