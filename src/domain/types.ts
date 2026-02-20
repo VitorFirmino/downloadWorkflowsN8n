@@ -20,6 +20,18 @@ export interface DownloadStats {
   }>;
 }
 
+export interface ImportStats {
+  readonly total: number;
+  readonly imported: number;
+  readonly failed: number;
+  readonly failures: ReadonlyArray<{
+    readonly name: string;
+    readonly filePath: string;
+    readonly folderPath?: string;
+    readonly error: string;
+  }>;
+}
+
 export interface AppConfig {
   readonly baseUrl: string;
   readonly email: string;
