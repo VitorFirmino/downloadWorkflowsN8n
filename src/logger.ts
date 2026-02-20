@@ -45,3 +45,26 @@ export const logSummary = (stats: {
   }
   console.info('═'.repeat(50) + '\n');
 };
+
+export const logImportSummary = (stats: ImportStats): void => {
+  console.info('\n' + '═'.repeat(50));
+  console.info('📊 RESUMO IMPORTAÇÃO');
+  console.info('═'.repeat(50));
+  console.info(`Total de arquivos: ${stats.total}`);
+  console.info(`✅ Importados com sucesso: ${stats.imported}`);
+  console.info(`❌ Falhas: ${stats.failed}`);
+
+  if (stats.failures.length > 0) {
+    console.info('\n📝 Workflows com falha:');
+    stats.failures.forEach((failure) => {
+      const destination = failure.folderPath
+        ? ` (pasta: ${failure.folderPath})`
+        : " (raiz do projeto)";
+      console.info(`  • ${failure.name}${destination}`);
+      console.info(`    Arquivo: ${failure.filePath}`);
+      console.info(`    Erro: ${failure.error}`);
+    });
+  }
+  console.info('═'.repeat(50) + '\n');
+};
+import type { ImportStats } from "./domain/types";
