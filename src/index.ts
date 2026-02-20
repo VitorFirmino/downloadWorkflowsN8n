@@ -5,6 +5,7 @@ import {
   logError,
   logSection,
   logSummary,
+  logImportSummary,
 } from "./logger";
 import { executeLogin } from "./application/use-cases/login.use-case";
 import { executeCollectWorkflows } from "./application/use-cases/collect-workflows.use-case";
@@ -86,7 +87,7 @@ const downloadWorkflows = async (page: Page, workflows: WorkflowRefArray): Promi
 };
 
 
-const run = async (): Promise<void> => {
+const run = async (): Promise<number> => {
   const {
     headless,
     sessionDir,
@@ -150,8 +151,7 @@ const run = async (): Promise<void> => {
           console.error("Erro no cleanup:", cleanupError);
         }
 
-        
-        process.exit(0);
+        return 0;
       }
 
       debugLog(
@@ -195,7 +195,7 @@ const run = async (): Promise<void> => {
       }
 
       logSection("Importação de Workflows");
-      await executeImportWorkflows(targetPage, {
+      const importStats = await executeImportWorkflows(targetPage, {
         baseUrl: targetBaseUrl,
         exportDir: config.exportDir,
         projectId: targetProjectId,
@@ -203,10 +203,17 @@ const run = async (): Promise<void> => {
         fallbackFolder: config.fallbackFolder,
         timeout: pageTimeout,
       });
-      logSuccess("Importação concluída com sucesso!");
-      return;
+      logImportSummary(importStats);
+      if (importStats.failed > 0) {
+        logError(`Importação concluída com ${importStats.failed} falha(s).`);
+        return 1;
+      } else {
+        logSuccess("Importação concluída com sucesso!");
+        return 0;
+      }
     }
     logSuccess("Processo concluído com sucesso!");
+    return 0;
   } catch (error) {
     const message =
       error instanceof Error ? (error.stack ?? error.message) : String(error);
@@ -225,7 +232,7 @@ const run = async (): Promise<void> => {
       }
     }
 
-    process.exit(1);
+    return 1;
   } finally {
     try {
       if (browserContext) {
@@ -257,11 +264,15 @@ process.on("uncaughtException", (error) => {
   process.exit(1);
 });
 
-run().catch((error) => {
-  const message =
-    error instanceof Error ? (error.stack ?? error.message) : String(error);
-  logError(`Erro não tratado: ${message}`);
-  console.error("\n=== Erro Completo ===");
-  console.error(error);
-  process.exit(1);
-});
+run()
+  .then((exitCode) => {
+    process.exit(exitCode);
+  })
+  .catch((error) => {
+    const message =
+      error instanceof Error ? (error.stack ?? error.message) : String(error);
+    logError(`Erro não tratado: ${message}`);
+    console.error("\n=== Erro Completo ===");
+    console.error(error);
+    process.exit(1);
+  });
