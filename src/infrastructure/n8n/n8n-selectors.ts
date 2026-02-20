@@ -4,6 +4,7 @@ export const N8nSelectors = {
   
   resourcesList: '[data-test-id="resources-list"]',
   resourcesListItem: '[data-test-id="resources-list-item"]',
+  addFolderButton: '[data-test-id="add-folder-button"]',
   workflowCardName: '[data-test-id="workflow-card-name"]',
   workflowCardActions: '[data-test-id="workflow-card-actions"]',
   workflowActivatorStatus: '[data-test-id="workflow-activator-status"]',
